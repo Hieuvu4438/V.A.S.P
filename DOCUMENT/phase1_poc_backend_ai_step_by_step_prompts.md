@@ -156,6 +156,7 @@ Không thêm cấu hình cho frontend, SSO, Celery, Redis, observability nâng c
 
 # PHẦN 3 — Schema request/response
 
+
 ## Bước 3.1 — Viết schema submission
 
 ### File
