@@ -1,0 +1,88 @@
+==================================================================================
+Giai đoạn 1 / PoC, chỉ làm AI + backend, thì nội dung cần code nên xoay quanh một
+  luồng kiểm duyệt tối thiểu nhưng chạy được thật: nhận DOI, lấy metadata chuẩn, ra quyết định, lưu
+  kết quả, và đo chất lượng. Điều này bám theo DOCUMENT/implementation_plan.md:227,
+  DOCUMENT/implementation_plan.md:242, DOCUMENT/pdf_content.txt:366, DOCUMENT/pdf_content.txt:444.      
+  Nội dung cần code ở phase này:                                                                      
+  
+  - Tiếp nhận submission tối thiểu
+    - Có API để nhận bài kê khai, ưu tiên case có DOI.
+    - Validate đầu vào cơ bản: DOI hợp lệ, năm/ISSN nếu có.
+    - Mục tiêu là chạy được use case đơn giản nhất trước, chưa cần reviewer UI.
+  Tham chiếu: DOCUMENT/pdf_content.txt:319, DOCUMENT/pdf_content.txt:366.
+  - Lấy và chuẩn hóa metadata từ nguồn chính thống
+    - Gọi Crossref là nguồn chính.
+    - Nếu miss thì fallback OpenAlex.
+    - Chuẩn hóa toàn bộ về Canonical Metadata Schema (CMS).
+  Tham chiếu: DOCUMENT/implementation_plan.md:284, DOCUMENT/pdf_content.txt:373,
+  DOCUMENT/pdf_content.txt:940.
+  - Bắt buộc có provenance/grounding
+    - Mỗi field quan trọng phải biết lấy từ đâu ra.
+    - Ít nhất phải lưu được source_api, source_url, fetched_at.
+    - LLM không được tự bịa DOI, năm, ISSN, journal metadata.
+  Tham chiếu: DOCUMENT/implementation_plan.md:286, DOCUMENT/implementation_plan.md:386,
+  DOCUMENT/pdf_content.txt:158.
+  - Pipeline agent tối thiểu để ra quyết định
+    - Dùng graph/pipeline tuần tự trước, chưa cần parallel multi-agent.
+    - Luồng đủ dùng: submission → metadata fetch → normalize → decision.
+    - Chưa cần journal/author/integrity agent đầy đủ của MVP.
+  Tham chiếu: DOCUMENT/implementation_plan.md:246, DOCUMENT/implementation_plan.md:415.
+  - Decision engine bản PoC
+    - Trả về 1 trong 3 trạng thái: APPROVE | REVIEW | REJECT.
+    - Có confidence, rationale, và evidence cơ bản.
+    - Có thể dùng prompt v1 + model nhẹ hơn ở đầu phase, rồi nâng lên Sonnet khi tối ưu F1.
+  Tham chiếu: DOCUMENT/implementation_plan.md:236, DOCUMENT/implementation_plan.md:239,
+  DOCUMENT/pdf_content.txt:444, DOCUMENT/pdf_content.txt:450.
+  - Công thức điểm cơ bản
+    - Ở PoC chưa cần đầy đủ mọi nguồn, nhưng nên thiết kế decision theo kiểu có sub-scores và
+  confidence tổng.
+    - Quan trọng là server kiểm soát score, không để LLM tự quyết hoàn toàn.
+  Tham chiếu: DOCUMENT/implementation_plan.md:59, DOCUMENT/pdf_content.txt:1349.
+  - Lưu trữ backend tối thiểu
+    - Lưu được submission, publication metadata đã chuẩn hóa, decision.
+    - Đủ để truy xuất lại kết quả và phục vụ đánh giá.
+    - Chưa cần audit log WORM hoàn chỉnh ở phase này.
+  Tham chiếu: DOCUMENT/implementation_plan.md:248, DOCUMENT/pdf_content.txt:1000.
+  - API trả kết quả
+    - Ít nhất cần endpoint tạo submission và xem decision/status.
+    - Chưa cần queue reviewer, appeal, report, webhook.
+  Tham chiếu: DOCUMENT/implementation_plan.md:420, DOCUMENT/implementation_plan.md:421,
+  DOCUMENT/pdf_content.txt:1716.
+  - Eval + test
+    - Có script chạy đánh giá F1 trên gold dataset seed.
+    - Có unit test cho schema/connector.
+    - Có integration test cho API và pipeline PoC.
+  Tham chiếu: DOCUMENT/implementation_plan.md:237, DOCUMENT/implementation_plan.md:249,
+  DOCUMENT/implementation_plan.md:426.
+
+  Các đặc điểm kỹ thuật bắt buộc của phase này:
+
+  - Grounding trước sinh: metadata phải từ API chuẩn, không từ trí nhớ LLM —
+  DOCUMENT/pdf_content.txt:156.
+  - Deterministic trước stochastic: regex DOI, mapping schema, validation làm bằng code; LLM chỉ xử lý
+   phần judgment — DOCUMENT/pdf_content.txt:162.
+  - Fail-safe: thiếu nguồn hoặc mâu thuẫn thì đẩy REVIEW, không auto-approve —
+  DOCUMENT/pdf_content.txt:166.
+  - Structured output: output từ AI nên bị ràng buộc bằng schema/Pydantic —
+  DOCUMENT/pdf_content.txt:696.
+  - Thiết kế để mở rộng: PoC làm sequential, nhưng state/schema phải đủ sạch để sau này nâng lên      
+  LangGraph parallel — DOCUMENT/implementation_plan.md:255, DOCUMENT/pdf_content.txt:638.
+
+  Các phần chưa cần code ở phase này:
+
+  - Frontend/dashboard
+  - Reviewer queue, appeal flow, báo cáo
+  - ORCID, AND tiếng Việt, ROR
+  - MJL, SCImago, DOAJ, Beall, Retraction Watch
+  - Integrity detection
+  - SSO/RBAC đầy đủ
+  - Celery/Redis production-grade
+  - Observability full stack
+  - Kubernetes / production deploy
+
+  Tóm lại, phase này cần code một PoC backend có thể chạy end-to-end cho bài có DOI: nhận input → lấy 
+  metadata chuẩn → chuẩn hóa CMS → AI quyết định có kiểm soát → lưu DB → đánh giá bằng test/eval. Nếu 
+  muốn, tôi có thể chuyển ngay phần này thành bảng checklist tính năng PoC theo mức ưu tiên
+  MUST/SHOULD.
+
+==================================================================================
