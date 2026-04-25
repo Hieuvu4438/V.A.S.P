@@ -172,3 +172,5 @@ cython_debug/
 *.pt
 *.bin
 *.model
+
+tests/code/*
