@@ -4,6 +4,7 @@ This file describes the **current implementation slice**, not the full product v
 - `CLAUDE.md`
 - `.claude/project/overview.md`
 - `.claude/project/architecture.md`
+- `.claude/project/roadmap.md`
 
 ## In scope
 - project setup for backend PoC
@@ -33,11 +34,26 @@ This file describes the **current implementation slice**, not the full product v
 - Prometheus, Grafana, Langfuse, OpenTelemetry
 - Kubernetes or production infra
 
+## Placeholder file warning
+The repository may contain placeholder files or directories for later phases. Do not infer active scope or implemented behavior from file existence alone.
+
+Before relying on a pattern or module, inspect the file contents. In particular, treat these areas as possibly placeholder-only until verified:
+- `src/reviewagent/agents/`
+- `src/reviewagent/connectors/`
+- `src/reviewagent/api/`
+- `src/reviewagent/db/`
+- `src/reviewagent/llm/`
+- `src/reviewagent/snapshots/`
+- `src/reviewagent/tasks/`
+- `src/reviewagent/observability/`
+- `scripts/eval.py`
+
 ## Default implementation strategy
 - choose the smallest version that works
 - keep code local and simple
 - avoid introducing abstractions for future phases unless the repo already requires them
 - prefer adding tests for each non-trivial PoC component
+- when touching a placeholder file, implement only the minimal Phase 1 behavior requested
 
 ## Safe defaults
 - missing metadata -> fail safe

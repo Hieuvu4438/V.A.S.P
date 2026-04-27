@@ -1,15 +1,33 @@
 # Project architecture
 
-## Full architecture model
-The project is designed around five functional layers:
-1. identity and source verification
-2. journal quality checks
-3. author and affiliation verification
-4. content integrity checks
-5. decisioning and human-in-the-loop workflow
+## Full five-layer architecture
+ReviewAgent PTIT is designed around five functional architecture layers:
+
+1. **Identity and source verification**
+   - Validate publication identifiers and source metadata.
+   - Use authoritative sources before model reasoning.
+   - Phase 1 uses this layer through DOI, Crossref, OpenAlex, CMS, and provenance.
+
+2. **Journal quality checks**
+   - Verify journal indexing, quartile, whitelist/blacklist, hijack risk, and source reputation.
+   - This is future-phase scope unless explicitly requested.
+
+3. **Author and affiliation verification**
+   - Verify that the PTIT claimant is actually an author of the publication.
+   - Includes ORCID, affiliation normalization, and Vietnamese-name disambiguation.
+   - This is future-phase scope unless explicitly requested.
+
+4. **Content integrity checks**
+   - Detect integrity signals such as retractions, tortured phrases, paper-mill patterns, or suspicious references.
+   - This is future-phase scope unless explicitly requested.
+
+5. **Decisioning and human-in-the-loop workflow**
+   - Produce structured decisions from grounded evidence.
+   - Route weak or conflicting evidence to review.
+   - Phase 1 uses only a minimal decisioning slice; reviewer operations and appeals are later.
 
 ## Phase 1 PoC architecture
-The current implementation slice is a simplified subset of the full architecture.
+The current implementation slice is a simplified subset of the full architecture. It mostly exercises Layer 1 and a minimal part of Layer 5.
 
 ### Target PoC pipeline
 `POST /submissions` -> validate input -> fetch metadata -> normalize CMS -> decision -> save DB -> return response

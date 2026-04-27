@@ -6,18 +6,23 @@ ReviewAgent PTIT is an AI-assisted system for verifying scientific publication s
 The system helps verify publication claims against authoritative metadata sources and returns a structured decision with supporting evidence, auditability, and human review when needed.
 
 ## Full project shape
-The broader project is designed as a verification platform with multiple functional layers:
-- identity and source verification
-- journal quality checks
-- author and affiliation verification
-- optional content integrity checks
-- final decisioning with human-in-the-loop review
+The broader project is designed as a verification platform with five functional layers:
+1. identity and source verification
+2. journal quality checks
+3. author and affiliation verification
+4. content integrity checks
+5. final decisioning with human-in-the-loop review
 
-## Roadmap view
+These are architecture layers, not delivery phases.
+
+## Delivery roadmap
+The current roadmap has three delivery phases:
+
 ### Phase 1 — PoC
 - backend only
 - AI + API + DB + tests
-- focus on DOI -> metadata -> decision
+- focus on DOI -> metadata -> CMS -> decision
+- active implementation target in this repo
 
 ### Phase 2 — MVP
 - broader source coverage
@@ -41,7 +46,10 @@ The broader project is designed as a verification platform with multiple functio
 - Human review is part of the long-term system design, not an afterthought.
 
 ## Current delivery target
-The active implementation target in this repo is still **Phase 1 PoC**.
+The active implementation target in this repo is still **Phase 1 PoC**. Claude should understand the whole roadmap, but when a request is ambiguous it should default to Phase 1 scope unless the user explicitly asks for MVP or Production work.
+
+## Design reference
+`.claude/reviewagent-agent-design.md` is a long-form design memo for production-grade context, prompts, tools, skills, and runtime agents. Use its principles as reference, but do not treat all production agents or tool ecosystems in that memo as active implementation scope.
 
 ## Desired PoC outcome
 A minimal flow should work end-to-end:
