@@ -1,5 +1,4 @@
-from dataclasses import dataclass, field
-import json
+from dataclasses import dataclass
 
 from reviewagent.llm.gateway import LLMGateway
 from reviewagent.schemas.cms import CanonicalMetadataSchema
@@ -94,7 +93,7 @@ class DecisionAgent:
     async def run(self, cms: CanonicalMetadataSchema, errors: list[str] | None = None) -> DecisionAgentResult:
         input_data = _cms_to_input(cms)
 
-        if self._gateway._completion is None:
+        if not self._gateway.is_configured:
             result = _rule_based_decision(cms, errors)
             return DecisionAgentResult(decision=result, source="rule")
 

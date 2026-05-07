@@ -22,10 +22,11 @@ class APIsSettings(BaseModel):
 
 
 class LLMSettings(BaseModel):
-    provider: str = "anthropic"
+    provider: str = "openrouter"
     api_key: str = ""
-    model: str = "claude-opus-4-7"
-    timeout_seconds: int = 30
+    model: str = "tencent/hy3-preview:free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    timeout_seconds: int = 60
 
 
 class Settings(BaseSettings):
