@@ -60,7 +60,11 @@ Placeholder-only files (empty stubs for later phases):
 Phase 1 PoC is now feature-complete. The full flow works:
 `POST /submissions (DOI) -> Crossref -> OpenAlex fallback -> CMS -> decision -> DB -> response`
 
+## Documentation
+- `DOCUMENT/phase1_guide.md` — Complete Phase 1 guide (business logic, run instructions, data flow, file roles, coding order, tests, checklist)
+- `DOCUMENT/phase2_guide.md` — Phase 2 MVP planning guide (LangGraph parallel, journal/author agents, snapshots, Redis, Celery, audit WORM, observability, reviewer HITL)
+- `DOCUMENT/phase3_guide.md` — Phase 3 Production planning guide (integrity detection, appeal workflow, multi-provider LLM, self-hosted LLM, Kubernetes, CI/CD eval gate, compliance)
+
 Missing for full production readiness (but not in Phase 1 scope):
 - Tests for connectors, agents, API endpoints, and integration
-- Sophisticated LLM provider integration (currently requires manual completion callback)
 - Platt scaling calibration (currently identity function)
