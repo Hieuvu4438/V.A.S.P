@@ -130,10 +130,10 @@ class CrossrefConnector(BaseConnector):
     def _extract_journal_title(self, msg: dict[str, Any]) -> str | None:
         container = msg.get("container-title", [])
         if container and container[0]:
-            return container[0].strip()
+            return str(container[0]).strip()
         short = msg.get("short-container-title", [])
         if short and short[0]:
-            return short[0].strip()
+            return str(short[0]).strip()
         return None
 
     def _extract_issn(self, msg: dict[str, Any]) -> str | None:

@@ -54,7 +54,7 @@ class LLMGateway:
             response = await self.client.post("/chat/completions", json=payload)
             response.raise_for_status()
             data = response.json()
-            content = data["choices"][0]["message"]["content"]
+            content = str(data["choices"][0]["message"]["content"])
             # OpenRouter free model may wrap JSON in markdown fences
             content = content.strip()
             if content.startswith("```"):

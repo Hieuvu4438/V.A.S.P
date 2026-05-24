@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from uuid import uuid4
 import sys
@@ -29,12 +29,12 @@ def test_cms_requires_grounded_provenance_and_normalizes_doi() -> None:
         doi="DOI:10.1000/XYZ-789",
         title="Grounded title",
         pub_year=2024,
-        pub_date="2024-05-01",
+        pub_date=date(2024, 5, 1),
         journal=CMSJournal(title="Journal of Testing", issn_l="1234-5678"),
         authors=[CMSAuthor(full_name="Nguyen Van A")],
         source_api="crossref",
-        source_url="https://api.crossref.org/works/10.1000/xyz-789",
-        fetched_at="2026-04-23T10:00:00Z",
+        source_url="https://api.crossref.org/works/10.1000/xyz-789",  # type: ignore[arg-type]
+        fetched_at=datetime.fromisoformat("2026-04-23T10:00:00+00:00"),
     )
 
     assert cms.doi == "10.1000/xyz-789"
@@ -48,12 +48,12 @@ def test_cms_rejects_pub_date_year_mismatch() -> None:
             doi="10.1000/test-1",
             title="Grounded title",
             pub_year=2024,
-            pub_date="2023-05-01",
+            pub_date=date(2023, 5, 1),
             journal=CMSJournal(title="Journal of Testing"),
             authors=[CMSAuthor(full_name="Nguyen Van A")],
             source_api="openalex",
-            source_url="https://api.openalex.org/works/W123",
-            fetched_at="2026-04-23T10:00:00Z",
+            source_url="https://api.openalex.org/works/W123",  # type: ignore[arg-type]
+            fetched_at=datetime.fromisoformat("2026-04-23T10:00:00+00:00"),
         )
 
 

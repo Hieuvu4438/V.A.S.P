@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from reviewagent.agents.graph import ReviewPipeline
 from reviewagent.api.deps import get_db, get_pipeline
 from reviewagent.db.repositories.decision_repo import save_decision
+from reviewagent.db.repositories.publication_repo import upsert_publication_from_cms
 from reviewagent.db.repositories.submission_repo import create_submission, update_submission_status
 from reviewagent.schemas.submission import (
     SubmissionCreateRequest,
@@ -31,22 +32,8 @@ async def create_submission_endpoint(
         state = await pipeline.run(submission_id=submission_id, doi=request.doi)
 
         if state.cms is not None:
-            from reviewagent.db.models.publication import Publication
-
-            pub = Publication(
-                doi=state.cms.doi,
-                title=state.cms.title,
-                pub_year=state.cms.pub_year,
-                pub_date=state.cms.pub_date,
-                cms=state.cms.model_dump(mode="json"),
-                provenance={
-                    "source_api": state.cms.source_api,
-                    "source_url": str(state.cms.source_url),
-                },
-            )
-            db.add(pub)
-            await db.flush()
-            submission.publication_id = pub.id
+            publication = await upsert_publication_from_cms(db, state.cms)
+            submission.publication_id = publication.id
 
         if state.decision is not None:
             decision = await save_decision(

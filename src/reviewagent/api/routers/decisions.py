@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -19,7 +20,7 @@ class DecisionResponse(BaseModel):
     confidence_calibrated: float
     rationale: str
     flags: list[str]
-    evidence: dict
+    evidence: dict[str, Any]
     model_config = {"from_attributes": True}
 
 

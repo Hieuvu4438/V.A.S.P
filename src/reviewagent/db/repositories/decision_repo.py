@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -15,7 +16,7 @@ async def save_decision(
     confidence_calibrated: float,
     rationale: str,
     flags: list[str] | None = None,
-    evidence: dict | None = None,
+    evidence: dict[str, Any] | None = None,
     model_version: str | None = None,
     prompt_version: str | None = None,
 ) -> Decision:

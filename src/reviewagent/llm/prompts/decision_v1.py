@@ -16,5 +16,8 @@ Keep the rationale short and cite only fields present in the input.
 """
 
 
-def build_decision_user_prompt(input_data: dict) -> str:
+from typing import Any
+
+
+def build_decision_user_prompt(input_data: dict[str, Any]) -> str:
     return f"Evaluate this fetched CMS evidence for Phase 1 PoC:\n{input_data}"

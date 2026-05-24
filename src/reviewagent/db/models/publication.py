@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any, TYPE_CHECKING
 from datetime import date, datetime
 from uuid import UUID, uuid4
 
@@ -8,6 +9,9 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from reviewagent.db.session import Base
+
+if TYPE_CHECKING:
+    from reviewagent.db.models.submission import Submission
 
 
 class Publication(Base):
@@ -19,8 +23,8 @@ class Publication(Base):
     title: Mapped[str] = mapped_column(Text, nullable=False)
     pub_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     pub_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    cms: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
-    provenance: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    cms: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    provenance: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

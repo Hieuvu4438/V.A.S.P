@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from datetime import datetime
 from uuid import UUID, uuid4
 
@@ -9,6 +10,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from reviewagent.db.session import Base
 from reviewagent.schemas.submission import SubmissionStatus
+
+if TYPE_CHECKING:
+    from reviewagent.db.models.decision import Decision
+    from reviewagent.db.models.publication import Publication
 
 
 class Submission(Base):

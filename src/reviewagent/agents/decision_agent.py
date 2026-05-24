@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from reviewagent.llm.gateway import LLMGateway
 from reviewagent.schemas.cms import CanonicalMetadataSchema
@@ -11,7 +12,7 @@ class DecisionAgentResult:
     source: str  # "llm" | "rule"
 
 
-def _cms_to_input(cms: CanonicalMetadataSchema) -> dict:
+def _cms_to_input(cms: CanonicalMetadataSchema) -> dict[str, Any]:
     return {
         "doi": cms.doi,
         "title": cms.title,
