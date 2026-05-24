@@ -24,7 +24,7 @@ class APIsSettings(BaseModel):
 class LLMSettings(BaseModel):
     provider: str = "openrouter"
     api_key: str = ""
-    model: str = "tencent/hy3-preview:free"
+    model: str = "nvidia/nemotron-3-super-120b-a12b:free"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     timeout_seconds: int = 60
 
