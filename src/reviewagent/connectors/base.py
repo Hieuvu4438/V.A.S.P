@@ -8,8 +8,8 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # Default timeouts (seconds): connect, read, write, pool
-_DEFAULT_TIMEOUT = httpx.Timeout(connect=5.0, read=15.0, write=5.0, pool=5.0)
-
+# _DEFAULT_TIMEOUT = httpx.Timeout(connect=5.0, read=15.0, write=5.0, pool=5.0)
+_DEFAULT_TIMEOUT = httpx.Timeout(connect=15.0, read=15.0, write=5.0, pool=5.0)
 
 class ConnectorError(Exception):
     """Raised when a connector encounters a non-recoverable HTTP or network error."""
