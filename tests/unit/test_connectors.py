@@ -7,6 +7,7 @@ from reviewagent.connectors.base import BaseConnector, ConnectorError
 from reviewagent.connectors.crossref import CrossrefConnector
 from reviewagent.connectors.doaj import DOAJConnector
 from reviewagent.connectors.openalex import OpenAlexConnector
+from reviewagent.connectors.orcid import ORCIDConnector
 from reviewagent.connectors.retraction_watch import RetractionWatchConnector
 from reviewagent.connectors.ror import RORConnector
 
@@ -178,3 +179,79 @@ def test_doaj_parse_returns_not_in_doaj_on_miss() -> None:
     assert info.in_doaj is False
     assert info.apc is None
     assert info.seal is False
+
+
+# --- ORCID connector tests ---
+
+
+def test_orcid_extract_orcid_ids_parses_results() -> None:
+    raw = {
+        "result": [
+            {"orcid-identifier": {"path": "0000-0001-2345-6789"}},
+            {"orcid-identifier": {"path": "0000-0002-9876-5432"}},
+        ]
+    }
+    ids = ORCIDConnector._extract_orcid_ids(raw)
+    assert ids == ["0000-0001-2345-6789", "0000-0002-9876-5432"]
+
+
+def test_orcid_extract_orcid_ids_returns_empty_on_miss() -> None:
+    assert ORCIDConnector._extract_orcid_ids({}) == []
+    assert ORCIDConnector._extract_orcid_ids({"result": []}) == []
+
+
+def test_orcid_extract_dois_parses_works() -> None:
+    raw = {
+        "group": [
+            {
+                "work-summary": [
+                    {
+                        "external-ids": {
+                            "external-id": [
+                                {"external-id-type": "doi", "external-id-value": "10.1000/test123"},
+                                {"external-id-type": "eid", "external-id-value": "W123"},
+                            ]
+                        }
+                    }
+                ]
+            },
+            {
+                "work-summary": [
+                    {
+                        "external-ids": {
+                            "external-id": [
+                                {"external-id-type": "doi", "external-id-value": "10.1000/other456"},
+                            ]
+                        }
+                    }
+                ]
+            },
+        ]
+    }
+    dois = ORCIDConnector._extract_dois(raw)
+    assert dois == ["10.1000/test123", "10.1000/other456"]
+
+
+def test_orcid_extract_dois_returns_empty_on_miss() -> None:
+    assert ORCIDConnector._extract_dois({}) == []
+    assert ORCIDConnector._extract_dois({"group": []}) == []
+
+
+def test_orcid_extract_dois_normalizes_to_lowercase() -> None:
+    raw = {
+        "group": [
+            {
+                "work-summary": [
+                    {
+                        "external-ids": {
+                            "external-id": [
+                                {"external-id-type": "doi", "external-id-value": "10.1000/ABC"},
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+    dois = ORCIDConnector._extract_dois(raw)
+    assert dois == ["10.1000/abc"]
