@@ -5,7 +5,10 @@ import pytest
 
 from reviewagent.connectors.base import BaseConnector, ConnectorError
 from reviewagent.connectors.crossref import CrossrefConnector
+from reviewagent.connectors.doaj import DOAJConnector
 from reviewagent.connectors.openalex import OpenAlexConnector
+from reviewagent.connectors.retraction_watch import RetractionWatchConnector
+from reviewagent.connectors.ror import RORConnector
 
 
 class DummyConnector(BaseConnector):
@@ -97,6 +100,81 @@ def test_openalex_parse_maps_response_to_cms() -> None:
     assert cms.authors[0].full_name == "Nguyen Van A"
     assert cms.source_api == "openalex"
 
-
 def test_openalex_parse_rejects_missing_required_metadata() -> None:
     assert OpenAlexConnector()._parse("10.1000/test", {"title": "No source", "publication_year": 2024}) is None
+
+
+def test_ror_parse_maps_affiliation_match() -> None:
+    result = RORConnector()._parse(
+        {
+            "items": [
+                {
+                    "organization": {
+                        "id": "https://ror.org/03yrm5c26",
+                        "name": "Posts and Telecommunications Institute of Technology",
+                    }
+                }
+            ]
+        }
+    )
+
+    assert result is not None
+    assert result.ror_id == "https://ror.org/03yrm5c26"
+    assert result.normalized_name == "Posts and Telecommunications Institute of Technology"
+
+
+def test_ror_parse_returns_none_on_miss() -> None:
+    assert RORConnector()._parse({"items": []}) is None
+
+
+def test_retraction_watch_parse_maps_retraction() -> None:
+    info = RetractionWatchConnector()._parse(
+        {
+            "retractions": [
+                {
+                    "retraction_doi": "10.1000/retraction",
+                    "retraction_date": "2025-01-02",
+                    "reason": "Data concerns",
+                }
+            ]
+        }
+    )
+
+    assert info.retracted is True
+    assert info.retraction_doi == "10.1000/retraction"
+    assert info.retraction_date == date(2025, 1, 2)
+    assert info.reason == "Data concerns"
+
+
+def test_retraction_watch_parse_returns_not_retracted_on_miss() -> None:
+    info = RetractionWatchConnector()._parse({"retractions": []})
+
+    assert info.retracted is False
+    assert info.retraction_doi is None
+
+
+def test_doaj_parse_maps_journal_match() -> None:
+    info = DOAJConnector()._parse(
+        {
+            "results": [
+                {
+                    "bibjson": {
+                        "apc": {"amount": "1200"},
+                        "seal": True,
+                    }
+                }
+            ]
+        }
+    )
+
+    assert info.in_doaj is True
+    assert info.apc == 1200.0
+    assert info.seal is True
+
+
+def test_doaj_parse_returns_not_in_doaj_on_miss() -> None:
+    info = DOAJConnector()._parse({"results": []})
+
+    assert info.in_doaj is False
+    assert info.apc is None
+    assert info.seal is False
