@@ -1,6 +1,6 @@
 ---
 name: add-connector
-description: Use when creating or updating a connector in ReviewAgent PTIT. The skill knows the project has a larger roadmap, but defaults to the current authoritative metadata connector work unless the user explicitly asks for later-phase sources.
+description: Use when creating or updating a connector in ReviewAgent PTIT. The skill understands Phase 1 metadata connectors and Phase 2 MVP journal/author/retraction evidence connectors.
 when_to_use: Use when the task involves an external source, HTTP fetching, parsing responses, mapping authoritative fields, or adding connector tests.
 ---
 
@@ -11,18 +11,19 @@ Read these first when scope is ambiguous:
 - `.claude/project/phases.md`
 - `.claude/project/layers.md`
 - `.claude/project/phase1-scope.md`
+- `.claude/project/phase2-scope.md`
 - `.claude/project/current-state.md`
 
 # Purpose
 
-Add or refine a connector without over-designing it or pulling future source systems into Phase 1.
+Add or refine a connector without over-designing it or pulling Phase 3 source systems into Phase 1/2 work.
 
 ## Phase 1 active connectors
 - Crossref primary metadata lookup
 - OpenAlex fallback metadata lookup
 
-## Future connectors by default
-Only add these if explicitly requested or if the task is clearly scoped to Phase 2/3 design or implementation:
+## Phase 2 connector/evidence sources
+These sources are in scope for explicit Phase 2/MVP work:
 - DOAJ
 - SCImago
 - Master Journal List
@@ -31,12 +32,12 @@ Only add these if explicitly requested or if the task is clearly scoped to Phase
 - ROR
 - Beall/Cabells or other blacklist sources
 
-## Phase 1 connector rules
+## Connector rules
 - authoritative data first
 - connector scope is fetch, parse, normalize
 - misses should be handled explicitly
 - provenance should be preserved
-- map only fields required by current schemas
+- map only fields required by the current requested phase schemas
 - do not invent metadata when an API response is missing or incomplete
 
 ## Procedure
@@ -62,5 +63,5 @@ Only add these if explicitly requested or if the task is clearly scoped to Phase
 - Does the connector return authoritative metadata only?
 - Are misses treated safely?
 - Is provenance attached or preserved?
-- Is the connector still Phase 1 unless future scope was explicit?
+- Is the connector inside the requested phase scope?
 - Are parsing tests present for at least one success case and one miss/failure case?

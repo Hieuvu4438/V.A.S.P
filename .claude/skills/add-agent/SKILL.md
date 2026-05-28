@@ -1,6 +1,6 @@
 ---
 name: add-agent
-description: Use when creating or refining an agent in ReviewAgent PTIT. The skill is aware of the full multi-layer roadmap, but by default constrains implementation to the current Phase 1 agent slice unless later-phase work is explicitly requested.
+description: Use when creating or refining an agent in ReviewAgent PTIT. The skill is aware of the full multi-layer roadmap and distinguishes Phase 1 maintenance, Phase 2 MVP agent work, and Phase 3 production scope.
 when_to_use: Use when the task touches files under src/reviewagent/agents, src/reviewagent/llm, or asks to create/refine Claude helper agents under .claude/agents.
 ---
 
@@ -10,7 +10,8 @@ Before implementing, distinguish between:
 - architecture layers in `.claude/project/layers.md`
 - delivery phases in `.claude/project/phases.md`
 - roadmap context in `.claude/project/roadmap.md`
-- active implementation scope in `.claude/project/phase1-scope.md`
+- active Phase 1 implementation scope in `.claude/project/phase1-scope.md`
+- active Phase 2 MVP scope in `.claude/project/phase2-scope.md`
 - current repo state in `.claude/project/current-state.md`
 - prompt and runtime-agent principles in `.claude/project/agent-design-reference.md`
 
@@ -28,19 +29,24 @@ Create or refine agents without confusing Claude Code helper agents with ReviewA
 ### ReviewAgent runtime application agents
 - Location: `src/reviewagent/agents/`
 - Purpose: application logic and AI-assisted verification inside the product.
-- These must follow Phase 1 scope unless the user explicitly requests later-phase implementation.
+- These must follow the requested phase scope: Phase 1 maintenance, Phase 2 MVP, or explicit Phase 3 work.
 
 ## Phase 1 runtime agent types
 - metadata agent
 - decision agent
 - sequential graph/state logic or equivalent pipeline
 
-## Reference-only runtime agents by default
-The design memo describes these production agents, but they are future scope unless explicitly requested:
-- input router agent
+## Phase 2 runtime agent types
+- input/router agent
+- metadata agent with cache/source evidence
 - journal agent
 - author agent
-- integrity agent
+- aggregator agent
+- decision agent v2
+- LangGraph-style fan-out/fan-in orchestration
+
+## Phase 3/reference-only runtime agents by default
+The design memo describes production agents and infrastructure, but these remain Phase 3 unless explicitly requested:
 - appeal agent
 
 ## Rules
@@ -48,7 +54,7 @@ The design memo describes these production agents, but they are future scope unl
 - use deterministic logic before model judgment
 - consume schema-backed inputs
 - default to safe behavior when evidence is weak
-- keep orchestration sequential unless explicitly asked otherwise
+- keep orchestration sequential for Phase 1; use LangGraph-style fan-out/fan-in only for explicit Phase 2 work
 - use structured/schema-backed outputs rather than free-text JSON
 - do not invent metadata, DOI, ISSN, year, quartile, or indexing data
 
@@ -72,6 +78,6 @@ The design memo describes these production agents, but they are future scope unl
 ## Verification checklist
 - Is this a helper agent or a runtime product agent?
 - Does the runtime agent only use grounded data?
-- Does it stay in Phase 1 scope unless explicitly requested otherwise?
+- Does it stay in the requested phase scope?
 - Does it fail safe when evidence is incomplete?
 - Is the returned structure aligned with current schemas?

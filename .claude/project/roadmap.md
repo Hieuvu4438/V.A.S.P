@@ -32,15 +32,16 @@ Prove the minimal backend + AI flow works end-to-end.
 
 ## Phase 2 — MVP
 ### Goal
-Expand the PoC into a usable internal system with broader verification coverage and reviewer support.
+Expand the PoC into a usable internal system with broader verification coverage, reviewer support, and auditable decisions.
 
-### Likely additions
-- richer source coverage such as DOAJ, SCImago, MJL, Retraction Watch
-- broader multi-agent orchestration
-- reviewer-facing operations and queue handling
-- audit logging improvements
-- stronger deployment and operational setup
-- more complete workflow coverage around decisions
+### Active MVP additions
+- CMS v2.0 with journal, author/affiliation, and retraction fields
+- richer source coverage: DOAJ, ORCID, ROR, Retraction Watch or equivalent snapshots
+- journal quality checks: MJL, SCImago, DOAJ, predatory/hijack evidence
+- author and affiliation checks: ORCID, ROR, Vietnamese-name matching
+- Redis DOI cache, LangGraph fan-out/fan-in orchestration, and optional Celery background work
+- reviewer queue endpoints and WORM audit log
+- Prometheus metrics, Langfuse tracing, Alembic migrations, Phase 2 tests and eval
 
 ## Phase 3 — Production
 ### Goal

@@ -1,6 +1,6 @@
 # Agent design reference
 
-This file distills `.claude/reviewagent-agent-design.md` into operational guidance for Claude Code. The design memo remains the long-form reference, but it is broader than the current Phase 1 codebase.
+This file distills `.claude/reviewagent-agent-design.md` into operational guidance for Claude Code. The design memo remains the long-form reference, and parts of it still exceed Phase 2 MVP scope.
 
 ## Core prompt principles
 - Constraint > capability: prompts should define what the agent must not do, especially around hallucinated metadata.
@@ -20,13 +20,17 @@ The long-form design describes seven runtime ReviewAgent application agents:
 6. Decision Agent — make grounded APPROVE/REVIEW/REJECT decisions from evidence.
 7. Appeal Agent — handle contested decisions with expanded evidence review.
 
-## Active Phase 1 subset
-Phase 1 should only activate the minimum subset needed for the PoC:
+## Active Phase 2 MVP subset
+Phase 2 may activate these runtime agents when their backing schemas/connectors/evidence exist:
+- Input Router Agent
 - Metadata Agent
-- Decision Agent
-- simple sequential orchestration or equivalent pipeline
+- Journal Agent
+- Author Agent
+- Aggregator Agent
+- Decision Agent v2
+- LangGraph-style fan-out/fan-in orchestration
 
-The Router, Journal, Author, Integrity, and Appeal agents are roadmap/reference by default unless the user explicitly asks for later-phase implementation.
+Integrity work is limited to retraction evidence. Appeal workflows remain Phase 3 unless explicitly requested.
 
 ## Prompt structure guidance
 Production prompts may use clear XML-style sections such as:

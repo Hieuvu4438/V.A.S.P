@@ -3,7 +3,7 @@
 This file is a lightweight context snapshot for Claude Code. Verify current files before relying on it, and update it after major implementation milestones.
 
 ## Observed implementation state
-The repository is in an active Phase 1 PoC state. The core end-to-end flow is implemented.
+The repository has a feature-complete Phase 1 PoC base. Phase 2 MVP context, skills, and agents are now set up under `.claude`, but most Phase 2 application modules are still placeholder-only until implemented.
 
 Real implemented areas include:
 - `src/reviewagent/config.py` — application, database, API, and LLM settings.
@@ -55,6 +55,9 @@ Placeholder-only files (empty stubs for later phases):
 - `src/reviewagent/db/repositories/journal_repo.py`
 - `src/reviewagent/schemas/audit.py`, `author.py`, `journal.py`
 - `src/reviewagent/llm/prompts/appeal_v1.py`, `metadata_v1.py`
+
+## Phase status
+Phase 1 PoC is feature-complete as the base implementation. The explicit Phase 2 MVP setup now exists in `.claude/project/phase2-scope.md`, `.claude/skills/run-phase2-task`, `.claude/skills/phase2-mvp-implementation`, and `.claude/agents/phase2-mvp-implementer`. Verify application code before assuming any Phase 2 module is implemented.
 
 ## Phase 1 completion status
 Phase 1 PoC is now feature-complete. The full flow works:

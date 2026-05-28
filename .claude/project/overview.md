@@ -22,13 +22,13 @@ The current roadmap has three delivery phases:
 - backend only
 - AI + API + DB + tests
 - focus on DOI -> metadata -> CMS -> decision
-- active implementation target in this repo
+- implemented base / maintenance scope
 
 ### Phase 2 — MVP
-- broader source coverage
-- more complete agent orchestration
-- reviewer workflows and dashboard support
-- stronger auditability and operational support
+- active setup for explicit Phase 2 work
+- richer source coverage: journal, author/affiliation, and retraction evidence
+- more complete agent orchestration with LangGraph-style fan-out/fan-in
+- reviewer workflows, WORM audit, and operational support
 
 ### Phase 3 — Production
 - integrity checks
@@ -46,18 +46,17 @@ The current roadmap has three delivery phases:
 - Human review is part of the long-term system design, not an afterthought.
 
 ## Current delivery target
-The active implementation target in this repo is still **Phase 1 PoC**. Claude should understand the whole roadmap, but when a request is ambiguous it should default to Phase 1 scope unless the user explicitly asks for MVP or Production work.
+The active implementation setup is now **Phase 2 MVP** when the user explicitly asks for Phase 2 work. The repository still contains Phase 1 PoC implementation as the base, so verify current files before assuming Phase 2 modules are implemented. Ambiguous maintenance requests should still be classified against the requested phase before coding.
 
 ## Design reference
 `.claude/reviewagent-agent-design.md` is a long-form design memo for production-grade context, prompts, tools, skills, and runtime agents. Use its principles as reference, but do not treat all production agents or tool ecosystems in that memo as active implementation scope.
 
-## Desired PoC outcome
-A minimal flow should work end-to-end:
-1. receive a submission
-2. validate DOI
-3. fetch metadata
-4. normalize into CMS
-5. produce a decision
-6. store result
-7. expose result via API
-8. evaluate with tests and scripts
+## Desired Phase 2 outcome
+A usable internal MVP should support:
+1. receive DOI plus claimed author/affiliation
+2. fetch or reuse cached metadata
+3. run metadata, journal, and author verification with grounded evidence
+4. aggregate sub-scores and produce a fail-safe decision
+5. persist decision, review state, and WORM audit log
+6. expose submission/decision/reviewer APIs
+7. evaluate with Phase 2 tests and gold dataset
