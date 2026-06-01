@@ -19,8 +19,11 @@ absent the caller passes ``default_year`` to :meth:`load`.
 
 import csv
 import logging
+import re
 from dataclasses import dataclass
 from pathlib import Path
+
+from reviewagent.snapshots.issn_utils import normalize_issn
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +57,10 @@ class SCImagoSnapshot:
     """
 
     def __init__(self) -> None:
-        # key: (issn_l, year)
+        # key: (issn_l_normalized, year)
         self._data: dict[tuple[str, int], SCImagoEntry] = {}
+        # key: issn_l_normalized -> SCImagoEntry (most recent year)
+        self._best_data: dict[str, SCImagoEntry] = {}
 
     # ------------------------------------------------------------------
     # Public API
@@ -85,9 +90,16 @@ class SCImagoSnapshot:
         if not path.exists():
             raise FileNotFoundError(f"SCImago snapshot not found: {path}")
 
+        # Auto-detect delimiter from the header line
+        with path.open("r", encoding="utf-8-sig") as f:
+            first_line = f.readline()
+            delimiter = ";" if ";" in first_line else ","
+
+        temp_data: dict[tuple[str, int], SCImagoEntry] = {}
+        temp_best_data: dict[str, SCImagoEntry] = {}
         count = 0
         with path.open(newline="", encoding="utf-8-sig") as fh:
-            reader = csv.DictReader(fh, delimiter=";")
+            reader = csv.DictReader(fh, delimiter=delimiter)
             if reader.fieldnames is None:
                 raise ValueError("SCImago CSV has no header row")
 
@@ -102,23 +114,44 @@ class SCImagoSnapshot:
             for row in reader:
                 entry = _parse_row(row, col_map, default_year)
                 if entry is not None:
-                    self._data[(entry.issn_l, entry.year)] = entry
-                    count += 1
+                    # Support multiple ISSNs separated by comma or semicolon
+                    issns = [p.strip() for p in re.split(r"[,;]+", entry.issn_l) if p.strip()]
+                    for single_issn in issns:
+                        norm_issn = normalize_issn(single_issn)
+                        if not norm_issn:
+                            continue
+
+                        # Store specific entry for each normalized ISSN
+                        specific_entry = SCImagoEntry(
+                            issn_l=single_issn,  # Store the original ISSN as reference
+                            year=entry.year,
+                            sjr_value=entry.sjr_value,
+                            quartile=entry.quartile,
+                        )
+
+                        temp_data[(norm_issn, entry.year)] = specific_entry
+
+                        # Update best year entry
+                        existing_best = temp_best_data.get(norm_issn)
+                        if existing_best is None or specific_entry.year > existing_best.year:
+                            temp_best_data[norm_issn] = specific_entry
+
+                        count += 1
+
+        # Atomic assignment
+        self._data = temp_data
+        self._best_data = temp_best_data
 
         logger.info("[scimago] Loaded %d entries from %s", count, path.name)
         return count
 
     def lookup(self, issn_l: str, year: int) -> SCImagoEntry | None:
         """Lookup by ISSN-L + year. Returns ``None`` on miss."""
-        return self._data.get((issn_l.strip(), year))
+        return self._data.get((normalize_issn(issn_l), year))
 
     def lookup_best(self, issn_l: str) -> SCImagoEntry | None:
         """Return the most recent entry for *issn_l* (any year)."""
-        issn_l = issn_l.strip()
-        candidates = [e for (k, e) in self._data.items() if k[0] == issn_l]
-        if not candidates:
-            return None
-        return max(candidates, key=lambda e: e.year)
+        return self._best_data.get(normalize_issn(issn_l))
 
 
 # ------------------------------------------------------------------

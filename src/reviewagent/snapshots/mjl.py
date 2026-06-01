@@ -21,6 +21,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from reviewagent.snapshots.issn_utils import normalize_issn
+
 logger = logging.getLogger(__name__)
 
 # Column name aliases → canonical field
@@ -82,6 +84,7 @@ class MJLSnapshot:
         if not path.exists():
             raise FileNotFoundError(f"MJL snapshot not found: {path}")
 
+        temp_data: dict[str, MJLEntry] = {}
         count = 0
         with path.open(newline="", encoding="utf-8-sig") as fh:
             reader = csv.DictReader(fh)
@@ -93,15 +96,20 @@ class MJLSnapshot:
             for row in reader:
                 entry = _parse_row(row, col_map)
                 if entry is not None:
-                    self._data[entry.issn_l] = entry
-                    count += 1
+                    norm_issn = normalize_issn(entry.issn_l)
+                    if norm_issn:
+                        temp_data[norm_issn] = entry
+                        count += 1
+
+        # Atomic assignment
+        self._data = temp_data
 
         logger.info("[mjl] Loaded %d journals from %s", count, path.name)
         return count
 
     def lookup(self, issn_l: str) -> MJLEntry | None:
         """O(1) lookup by ISSN-L. Returns ``None`` on miss."""
-        return self._data.get(issn_l.strip())
+        return self._data.get(normalize_issn(issn_l))
 
 
 # ------------------------------------------------------------------

@@ -15,7 +15,10 @@ Alternative column names:
 
 import csv
 import logging
+import re
 from pathlib import Path
+
+from reviewagent.snapshots.issn_utils import normalize_issn
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +63,8 @@ class BeallSnapshot:
         if not path.exists():
             raise FileNotFoundError(f"Beall snapshot not found: {path}")
 
+        temp_issns: set[str] = set()
+        temp_titles: set[str] = set()
         count = 0
         with path.open(newline="", encoding="utf-8-sig") as fh:
             reader = csv.DictReader(fh)
@@ -69,14 +74,23 @@ class BeallSnapshot:
             col_map = _resolve_columns(list(reader.fieldnames))
 
             for row in reader:
-                issn = (row.get(col_map.get("issn", ""), "") or "").strip()
+                issn_raw = (row.get(col_map.get("issn", ""), "") or "").strip()
                 title = (row.get(col_map.get("title", ""), "") or "").strip()
 
-                if issn:
-                    self._issns.add(issn)
-                    count += 1
+                if issn_raw:
+                    # Support multiple ISSNs separated by comma or semicolon
+                    parts = [p.strip() for p in re.split(r"[,;]+", issn_raw) if p.strip()]
+                    for part in parts:
+                        norm_issn = normalize_issn(part)
+                        if norm_issn:
+                            temp_issns.add(norm_issn)
+                            count += 1
                 if title:
-                    self._titles.add(_normalise_title(title))
+                    temp_titles.add(_normalise_title(title))
+
+        # Atomic assignment
+        self._issns = temp_issns
+        self._titles = temp_titles
 
         logger.info("[beall] Loaded %d predatory entries from %s", count, path.name)
         return count
@@ -87,8 +101,10 @@ class BeallSnapshot:
         Both parameters may be empty — the check is skipped for empty values.
         Title comparison is case-insensitive and strips whitespace.
         """
-        if issn_l and issn_l.strip() in self._issns:
-            return True
+        if issn_l:
+            norm_issn = normalize_issn(issn_l)
+            if norm_issn in self._issns:
+                return True
 
         if title and _normalise_title(title) in self._titles:
             return True

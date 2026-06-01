@@ -7,6 +7,7 @@ import pytest
 from reviewagent.snapshots.mjl import MJLSnapshot, MJLEntry
 from reviewagent.snapshots.scimago import SCImagoSnapshot, SCImagoEntry
 from reviewagent.snapshots.beall import BeallSnapshot
+from reviewagent.snapshots.issn_utils import normalize_issn
 
 
 # --- MJL tests ---
@@ -193,3 +194,120 @@ def test_beall_case_insensitive_title(tmp_path: Path) -> None:
 
     assert snap.is_predatory("", "international journal of science") is True
     assert snap.is_predatory("", "International Journal of Science") is True
+
+
+def test_issn_normalization_logic() -> None:
+    assert normalize_issn("1234-5678") == "12345678"
+    assert normalize_issn("1234-567x") == "1234567X"
+    assert normalize_issn(" 1234-567X ") == "1234567X"
+    assert normalize_issn("") == ""
+    assert normalize_issn(None) == ""
+
+
+def test_mjl_issn_normalization(tmp_path: Path) -> None:
+    csv_path = tmp_path / "mjl.csv"
+    _write_csv(csv_path, [
+        {"ISSN-L": "1234-567x", "Title": "J1", "SCIE": "1", "SSCI": "", "AHCI": "", "ESCI": ""},
+    ])
+
+    snap = MJLSnapshot()
+    snap.load(csv_path)
+
+    # Test lookup using normalized variations
+    assert snap.lookup("1234-567X") is not None
+    assert snap.lookup("1234567x") is not None
+    assert snap.lookup("1234-567x") is not None
+    assert snap.lookup("1234-567X ").title == "J1"
+
+
+def test_scimago_issn_normalization_and_multi_value(tmp_path: Path) -> None:
+    csv_path = tmp_path / "scimago.csv"
+    _write_csv(csv_path, [
+        {"ISSN": "1234-567x, 8765-4321", "Title": "J1", "SJR": "2.5", "SJR Best Quartile": "Q1", "Year": "2023"},
+        {"ISSN": "1234-567X", "Title": "J1", "SJR": "2.0", "SJR Best Quartile": "Q2", "Year": "2022"},
+    ], delimiter=";")
+
+    snap = SCImagoSnapshot()
+    snap.load(csv_path)
+
+    # Test lookup for both ISSNs in the multi-value field
+    entry1 = snap.lookup("1234567x", 2023)
+    entry2 = snap.lookup("8765-4321", 2023)
+    assert entry1 is not None
+    assert entry2 is not None
+    assert entry1.quartile == "Q1"
+    assert entry2.quartile == "Q1"
+
+    # Test lookup best (O(1))
+    best = snap.lookup_best("1234-567x")
+    assert best is not None
+    assert best.year == 2023
+    assert best.quartile == "Q1"
+
+
+def test_beall_multi_value_issn(tmp_path: Path) -> None:
+    csv_path = tmp_path / "beall.csv"
+    _write_csv(csv_path, [
+        {"ISSN": "1234-567X; 8765-4321", "Title": "Predatory J"},
+    ])
+
+    snap = BeallSnapshot()
+    snap.load(csv_path)
+
+    assert snap.is_predatory("1234-567x", "") is True
+    assert snap.is_predatory("87654321", "") is True
+    assert snap.is_predatory("0000-0000", "") is False
+
+
+def test_scimago_auto_detect_delimiter(tmp_path: Path) -> None:
+    # Semicolon delimited
+    csv_path_semi = tmp_path / "scimago_semi.csv"
+    _write_csv(csv_path_semi, [
+        {"ISSN": "1234-5678", "Title": "J1", "SJR": "1.0", "SJR Best Quartile": "Q2", "Year": "2023"},
+    ], delimiter=";")
+
+    # Comma delimited
+    csv_path_comma = tmp_path / "scimago_comma.csv"
+    _write_csv(csv_path_comma, [
+        {"ISSN": "1234-5678", "Title": "J1", "SJR": "1.0", "SJR Best Quartile": "Q2", "Year": "2023"},
+    ], delimiter=",")
+
+    snap1 = SCImagoSnapshot()
+    assert snap1.load(csv_path_semi) == 1
+
+    snap2 = SCImagoSnapshot()
+    assert snap2.load(csv_path_comma) == 1
+
+
+def test_atomic_loading_prevents_partial_load_and_data_leak(tmp_path: Path) -> None:
+    csv_good = tmp_path / "good.csv"
+    _write_csv(csv_good, [
+        {"ISSN-L": "1111-1111", "Title": "Good Journal", "SCIE": "1", "SSCI": "", "AHCI": "", "ESCI": ""},
+    ])
+
+    snap = MJLSnapshot()
+    snap.load(csv_good)
+    assert snap.size == 1
+    assert snap.lookup("1111-1111") is not None
+
+    # Load bad file (missing columns) -> should raise ValueError and NOT modify existing data
+    csv_bad = tmp_path / "bad.csv"
+    with csv_bad.open("w", encoding="utf-8") as f:
+        f.write("wrong_header1,wrong_header2\nvalue1,value2\n")
+
+    with pytest.raises(ValueError):
+        snap.load(csv_bad)
+
+    # Size and lookups should remain unchanged
+    assert snap.size == 1
+    assert snap.lookup("1111-1111") is not None
+
+    # Reloading a different good file should clear the old entries (no accumulation)
+    csv_good2 = tmp_path / "good2.csv"
+    _write_csv(csv_good2, [
+        {"ISSN-L": "2222-2222", "Title": "Another Good Journal", "SCIE": "1", "SSCI": "", "AHCI": "", "ESCI": ""},
+    ])
+    snap.load(csv_good2)
+    assert snap.size == 1
+    assert snap.lookup("1111-1111") is None
+    assert snap.lookup("2222-2222") is not None
