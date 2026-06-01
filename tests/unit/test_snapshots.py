@@ -7,6 +7,7 @@ import pytest
 from reviewagent.snapshots.mjl import MJLSnapshot, MJLEntry
 from reviewagent.snapshots.scimago import SCImagoSnapshot, SCImagoEntry
 from reviewagent.snapshots.beall import BeallSnapshot
+from reviewagent.snapshots.retraction_watch import RetractionWatchSnapshot
 from reviewagent.snapshots.issn_utils import normalize_issn
 
 
@@ -311,3 +312,49 @@ def test_atomic_loading_prevents_partial_load_and_data_leak(tmp_path: Path) -> N
     assert snap.size == 1
     assert snap.lookup("1111-1111") is None
     assert snap.lookup("2222-2222") is not None
+
+
+# --- Retraction Watch tests ---
+
+
+def test_retraction_watch_load_and_lookup(tmp_path: Path) -> None:
+    csv_path = tmp_path / "retraction_watch.csv"
+    _write_csv(csv_path, [
+        {"DOI": "10.1000/retracted", "Retraction DOI": "10.1000/notice", "Retraction Date": "2025-01-02", "Reason": "Data concerns"},
+        {"DOI": "10.1000/also-retracted", "Retraction DOI": "", "Retraction Date": "", "Reason": "Fabrication"},
+    ])
+
+    snap = RetractionWatchSnapshot()
+    count = snap.load(csv_path)
+
+    assert count == 2
+    assert snap.size == 2
+    assert snap.loaded is True
+
+    entry = snap.lookup("10.1000/retracted")
+    assert entry is not None
+    assert entry.retraction_doi == "10.1000/notice"
+    assert entry.reason == "Data concerns"
+
+    assert snap.lookup("10.1000/missing") is None
+
+
+def test_retraction_watch_normalizes_doi_prefix(tmp_path: Path) -> None:
+    csv_path = tmp_path / "rw.csv"
+    _write_csv(csv_path, [
+        {"DOI": "DOI:10.1000/test", "Retraction DOI": "", "Retraction Date": "", "Reason": ""},
+    ])
+
+    snap = RetractionWatchSnapshot()
+    snap.load(csv_path)
+
+    # Lookup with or without doi: prefix should both work
+    assert snap.lookup("10.1000/test") is not None
+    assert snap.lookup("DOI:10.1000/test") is not None
+    assert snap.lookup("10.1000/TEST") is not None
+
+
+def test_retraction_watch_load_missing_file() -> None:
+    snap = RetractionWatchSnapshot()
+    with pytest.raises(FileNotFoundError):
+        snap.load("/nonexistent/retraction_watch.csv")

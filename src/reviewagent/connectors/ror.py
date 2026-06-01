@@ -24,7 +24,7 @@ class RORConnector(BaseConnector):
         if not normalized_query:
             return None
 
-        raw = await self._get("/v1/organizations", params={"affiliation": normalized_query})
+        raw = await self._get("/v2/organizations", params={"query": normalized_query})
         result = self._parse(raw)
         if result is None:
             logger.info("[ror] No organization match for affiliation: %s", affiliation_name)
@@ -37,17 +37,34 @@ class RORConnector(BaseConnector):
             return None
 
         first = items[0]
-        organization = first.get("organization") if isinstance(first, dict) else None
-        org = organization if isinstance(organization, dict) else first
-        if not isinstance(org, dict):
+        if not isinstance(first, dict):
             return None
 
-        ror_id = (org.get("id") or "").strip()
-        name = (org.get("name") or "").strip()
-        if not ror_id or not name:
+        ror_id = (first.get("id") or "").strip()
+        if not ror_id:
+            return None
+
+        name = self._extract_display_name(first)
+        if not name:
             return None
 
         try:
             return RORLookupResult(ror_id=ror_id, normalized_name=name)
         except ValueError:
             return None
+
+    @staticmethod
+    def _extract_display_name(org: dict[str, Any]) -> str:
+        names = org.get("names") or []
+        if not isinstance(names, list):
+            return ""
+
+        for entry in names:
+            if not isinstance(entry, dict):
+                continue
+            types = entry.get("types") or []
+            if "ror_display" in types:
+                return (entry.get("value") or "").strip()
+
+        first = names[0] if names else {}
+        return (first.get("value") or "").strip() if isinstance(first, dict) else ""

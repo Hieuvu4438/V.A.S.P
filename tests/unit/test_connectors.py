@@ -8,7 +8,8 @@ from reviewagent.connectors.crossref import CrossrefConnector
 from reviewagent.connectors.doaj import DOAJConnector
 from reviewagent.connectors.openalex import OpenAlexConnector
 from reviewagent.connectors.orcid import ORCIDConnector
-from reviewagent.connectors.retraction_watch import RetractionWatchConnector
+from reviewagent.connectors.retraction_watch import RetractionInfo, RetractionWatchConnector
+from reviewagent.snapshots.retraction_watch import RetractionEntry, RetractionWatchSnapshot
 from reviewagent.connectors.ror import RORConnector
 
 
@@ -110,10 +111,11 @@ def test_ror_parse_maps_affiliation_match() -> None:
         {
             "items": [
                 {
-                    "organization": {
-                        "id": "https://ror.org/03yrm5c26",
-                        "name": "Posts and Telecommunications Institute of Technology",
-                    }
+                    "id": "https://ror.org/03yrm5c26",
+                    "names": [
+                        {"lang": "en", "types": ["ror_display"], "value": "Posts and Telecommunications Institute of Technology"},
+                        {"lang": "vi", "types": ["label"], "value": "Học viện Bưu chính Viễn thông"},
+                    ],
                 }
             ]
         }
@@ -128,18 +130,24 @@ def test_ror_parse_returns_none_on_miss() -> None:
     assert RORConnector()._parse({"items": []}) is None
 
 
-def test_retraction_watch_parse_maps_retraction() -> None:
-    info = RetractionWatchConnector()._parse(
-        {
-            "retractions": [
-                {
-                    "retraction_doi": "10.1000/retraction",
-                    "retraction_date": "2025-01-02",
-                    "reason": "Data concerns",
-                }
-            ]
-        }
+def _make_retraction_snapshot(*entries: RetractionEntry) -> RetractionWatchSnapshot:
+    snap = RetractionWatchSnapshot()
+    snap._data = {e.doi: e for e in entries}
+    return snap
+
+
+def test_retraction_watch_check_finds_retracted_doi() -> None:
+    snap = _make_retraction_snapshot(
+        RetractionEntry(
+            doi="10.1000/retracted",
+            retraction_doi="10.1000/retraction",
+            retraction_date=date(2025, 1, 2),
+            reason="Data concerns",
+        )
     )
+    connector = RetractionWatchConnector(snap)
+
+    info = connector.check_retraction("10.1000/retracted")
 
     assert info.retracted is True
     assert info.retraction_doi == "10.1000/retraction"
@@ -147,8 +155,11 @@ def test_retraction_watch_parse_maps_retraction() -> None:
     assert info.reason == "Data concerns"
 
 
-def test_retraction_watch_parse_returns_not_retracted_on_miss() -> None:
-    info = RetractionWatchConnector()._parse({"retractions": []})
+def test_retraction_watch_check_returns_not_retracted_on_miss() -> None:
+    snap = _make_retraction_snapshot()
+    connector = RetractionWatchConnector(snap)
+
+    info = connector.check_retraction("10.1000/missing")
 
     assert info.retracted is False
     assert info.retraction_doi is None
