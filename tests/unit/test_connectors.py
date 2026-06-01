@@ -136,7 +136,8 @@ def _make_retraction_snapshot(*entries: RetractionEntry) -> RetractionWatchSnaps
     return snap
 
 
-def test_retraction_watch_check_finds_retracted_doi() -> None:
+@pytest.mark.asyncio
+async def test_retraction_watch_check_finds_retracted_doi() -> None:
     snap = _make_retraction_snapshot(
         RetractionEntry(
             doi="10.1000/retracted",
@@ -146,8 +147,9 @@ def test_retraction_watch_check_finds_retracted_doi() -> None:
         )
     )
     connector = RetractionWatchConnector(snap)
+    connector._client = DummyClient(DummyResponse(404))  # type: ignore[assignment]
 
-    info = connector.check_retraction("10.1000/retracted")
+    info = await connector.check_retraction("10.1000/retracted")
 
     assert info.retracted is True
     assert info.retraction_doi == "10.1000/retraction"
@@ -155,14 +157,65 @@ def test_retraction_watch_check_finds_retracted_doi() -> None:
     assert info.reason == "Data concerns"
 
 
-def test_retraction_watch_check_returns_not_retracted_on_miss() -> None:
+@pytest.mark.asyncio
+async def test_retraction_watch_check_returns_not_retracted_on_miss() -> None:
     snap = _make_retraction_snapshot()
     connector = RetractionWatchConnector(snap)
+    connector._client = DummyClient(DummyResponse(404))  # type: ignore[assignment]
 
-    info = connector.check_retraction("10.1000/missing")
+    info = await connector.check_retraction("10.1000/missing")
 
     assert info.retracted is False
     assert info.retraction_doi is None
+
+
+@pytest.mark.asyncio
+async def test_retraction_watch_check_crossref_api_hit() -> None:
+    snap = _make_retraction_snapshot()
+    connector = RetractionWatchConnector(snap)
+    connector._client = DummyClient(DummyResponse(200, {
+        "message": {
+            "updated-by": [
+                {
+                    "type": "retraction",
+                    "doi": "10.1000/retraction-notice",
+                    "date": {"date-parts": [[2025, 1, 2]]},
+                    "label": "Retracted due to data concerns"
+                }
+            ]
+        }
+    }))  # type: ignore[assignment]
+
+    info = await connector.check_retraction("10.1000/retracted-on-crossref")
+    assert info.retracted is True
+    assert info.retraction_doi == "10.1000/retraction-notice"
+    assert info.retraction_date == date(2025, 1, 2)
+    assert info.reason == "Retracted due to data concerns"
+
+
+@pytest.mark.asyncio
+async def test_retraction_watch_check_fallback_on_api_error() -> None:
+    snap = _make_retraction_snapshot(
+        RetractionEntry(
+            doi="10.1000/retracted",
+            retraction_doi="10.1000/retraction-notice",
+            retraction_date=date(2025, 1, 2),
+            reason="Data concerns",
+        )
+    )
+    connector = RetractionWatchConnector(snap)
+
+    class FailingClient:
+        is_closed = False
+        async def get(self, *args, **kwargs):
+            raise Exception("API down")
+
+    connector._client = FailingClient()  # type: ignore[assignment]
+
+    info = await connector.check_retraction("10.1000/retracted")
+    assert info.retracted is True
+    assert info.retraction_doi == "10.1000/retraction-notice"
+    assert info.reason == "Data concerns"
 
 
 def test_doaj_parse_maps_journal_match() -> None:
